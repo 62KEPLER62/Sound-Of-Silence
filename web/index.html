@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Device Selection</title>
+    <script type="text/javascript" src="/eel.js"></script>
+</head>
+
+<body>
+    <h1>Audio Device Selection</h1>
+    <div>
+        <label for="inputDevice">Input Device:</label>
+        <select id="inputDevice"></select>
+    </div>
+    <div>
+        <label for="outputDevice">Output Device:</label>
+        <select id="outputDevice"></select>
+    </div>
+    <button onclick="startAudio()">Start Audio</button>
+    <button onclick="stopSound()">Stop Sound</button>
+    <input type="range" min="0" max="100" value="50" class="slider" id="mySlider" oninput="updateVolume()">
+
+    <div>
+        <label for="youtubeUrl">YouTube Video URL:</label>
+        <input type="text" id="youtubeUrl" placeholder="Enter YouTube video URL">
+    </div>
+    <div>
+        <label for="fileName">File Name:</label>
+        <input type="text" id="fileName" placeholder="Enter file name">
+    </div>
+    <button onclick="downloadAudio()">Download Audio</button>
+
+
+    <h2>Sound Files</h2>
+    <div id="soundList"></div>
+
+    <script>
+        // Function to populate dropdown with audio devices
+        function populateDropdown(devices, dropdownId) {
+            var dropdown = document.getElementById(dropdownId);
+            dropdown.innerHTML = '';
+            devices.forEach(function (device) {
+                var option = document.createElement('option');
+                option.value = device.index;
+                option.text = device.name;
+                dropdown.add(option);
+            });
+        }
+
+        // Function to fetch and populate input and output device dropdowns
+        function populateDevices() {
+            eel.list_audio_devices()(function (devices) {
+                populateDropdown(devices, 'inputDevice');
+                populateDropdown(devices, 'outputDevice');
+            });
+        }
+
+        // Function to start audio redirection
+        function startAudio() {
+            var inputDeviceIndex = parseInt(document.getElementById('inputDevice').value);
+            var outputDeviceIndex = parseInt(document.getElementById('outputDevice').value);
+            eel.redirect_audio(inputDeviceIndex, outputDeviceIndex);
+        }
+
+
+        function stopSound() {
+            eel.stop_audio();
+        }
+        // Function to fetch list of sound files from server and display them
+        function populateSoundFiles() {
+            eel.get_sound_files()(function (files) {
+                var soundList = document.getElementById('soundList');
+                soundList.innerHTML = '';
+                files.forEach(function (file) {
+                    var soundItem = document.createElement('div');
+                    soundItem.textContent = file;
+                    soundItem.classList.add('soundItem');
+                    soundItem.onclick = function () {
+                        playsound("sounds/" + file);
+                    };
+                    soundList.appendChild(soundItem);
+                });
+            });
+        }
+
+        // Function to play selected sound file
+        function playsound(filename) {
+            var inputDeviceIndex = parseInt(document.getElementById('inputDevice').value);
+            var outputDeviceIndex = parseInt(document.getElementById('outputDevice').value);
+            eel.redirect_audio(inputDeviceIndex, outputDeviceIndex);
+            eel.play_audio(filename, inputDeviceIndex, outputDeviceIndex);
+        }
+
+        // Populate input and output device dropdowns and sound files when the page loads
+
+        function downloadAudio() {
+            var youtubeUrl = document.getElementById('youtubeUrl').value;
+            var fileName = document.getElementById('fileName').value || "output";
+            eel.download_youtube_audio(youtubeUrl, fileName)(function (success) {
+                if (success) {
+                    alert("Audio downloaded successfully!");
+                    populateSoundFiles();
+                } else {
+                    alert("Failed to download audio. Please check the YouTube URL and try again.");
+                }
+            });
+        }
+
+        function updateVolume() {
+            var slider = document.getElementById("mySlider");
+            eel.updateVolume(parseInt(slider.value));
+        }
+
+
+
+        populateDevices();
+        populateSoundFiles();
+    </script>
+</body>
+
+</html>
